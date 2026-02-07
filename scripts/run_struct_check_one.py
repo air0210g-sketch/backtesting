@@ -75,7 +75,7 @@ if __name__ == "__main__":
         exit(1)
 
     # Filter for 2015.HK specifically
-    target_symbol = "2015.HK"
+    target_symbol = "700.HK"
     if target_symbol in runner.close.columns:
         print(f"Filtering data for {target_symbol}...")
         runner.close = runner.close[[target_symbol]]
@@ -102,9 +102,9 @@ if __name__ == "__main__":
         my_strategy_logic,
         param_grid,
         split_ratio=0.7,
-        accumulate=True,  # 开启多次入场
-        size=0.33,  # 每次入场仓位
-        size_type="value",  # 按价值百分比
+        # accumulate=False,  # 开启多次入场
+        # size=0.1,  # 每次入场仓位
+        # size_type="value",  # 按价值百分比
     )
     print("#" * 100)
     print("#" * 100)
