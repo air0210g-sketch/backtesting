@@ -1,0 +1,29 @@
+,agg_func_mean
+Start,2022-06-24 00:00:00
+End,2026-02-06 00:00:00
+Period,921 days 00:00:00
+Start Value,1000000.0
+End Value,1000000.1397759492
+Total Return [%],1.3977594913586477e-05
+Benchmark Return [%],-56.09308022045303
+Max Gross Exposure [%],8.713319067733973e-05
+Total Fees Paid,0.001123313778874422
+Max Drawdown [%],4.5054213562940647e-05
+Max Drawdown Duration,638 days 00:00:00
+Total Trades,6.0
+Total Closed Trades,5.0
+Total Open Trades,1.0
+Open Trade PnL,0.028235950500000054
+Win Rate [%],60.0
+Best Trade [%],79.4825073566369
+Worst Trade [%],-29.492387618072158
+Avg Winning Trade [%],28.57030473160515
+Avg Losing Trade [%],-25.963903081103044
+Avg Winning Trade Duration,152 days 08:00:00
+Avg Losing Trade Duration,45 days 12:00:00
+Profit Factor,1.6505783804361307
+Expectancy,0.02230799972717295
+Sharpe Ratio,0.21749680474406785
+Calmar Ratio,0.12295049035487952
+Omega Ratio,1.0416088230419651
+Sortino Ratio,0.32573163561805607
