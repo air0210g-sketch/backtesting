@@ -130,6 +130,22 @@ def check_volume_breakout(volume, window=20, multiple=2.0):
     return is_breakout
 
 
+def calc_atr(high, low, close, period=14):
+    """
+    Average True Range (ATR).
+    True Range = max(H-L, |H-PrevClose|, |L-PrevClose|).
+    ATR = EMA(TR, period). Returns same shape as close.
+    """
+    prev_close = close.shift(1)
+    tr1 = high - low
+    tr2 = (high - prev_close).abs()
+    tr3 = (low - prev_close).abs()
+    tr = np.maximum(tr1.values, np.maximum(tr2.values, tr3.values))
+    tr = pd.DataFrame(tr, index=close.index, columns=close.columns) if isinstance(close, pd.DataFrame) else pd.Series(tr, index=close.index)
+    atr = tr.ewm(alpha=1 / period, adjust=False).mean()
+    return atr
+
+
 try:
     import talib
 except ImportError:

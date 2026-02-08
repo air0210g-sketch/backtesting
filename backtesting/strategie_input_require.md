@@ -48,3 +48,10 @@
 1. 确保指标计算函数已在 `backtesting/indicators.py` 中实现。
 2. 逻辑表达式尽量简洁，使用 `&` (与)、`|` (或)、`~` (非) 进行组合。
 3. 寻优参数不宜过多，以免产生维度爆炸（组合数建议控制在 5000 以内）。
+
+## 6. 性能优化（可选）
+| 优化项 | 说明 |
+| :----- | :--- |
+| **指标预计算** | `runner.set_precompute_indicators("default")` 使用默认（周 KDJ）；或 `["kdj", "weekly_kdj", "atr"]` 从内置注册表启用。策略需声明对应参数（如 `k_df`, `d_df`, `j_df`, `atr_df`），有注入则用，否则内部计算。内置：`kdj`（日）、`weekly_kdj`（周）、`atr`（14 周期）。 |
+| **数据缓存** | `load_data(use_cache=True)` 将对齐后的 OHLCV 存为 `data_dir/.cache/*.parquet`，下次启动若 CSV 未变则直接读缓存。 |
+| **止损广播** | 框架已按列向 VectorBT 传入 `sl_stop`/`tp_stop`/`sl_trail` 数组，无需额外配置。 |

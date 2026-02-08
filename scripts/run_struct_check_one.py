@@ -30,6 +30,9 @@ def my_strategy_logic(
     low_df,
     close_df,
     vol_df,
+    k_df=None,
+    d_df=None,
+    j_df=None,
     kdj_low=40,
     kdj_high=80,
     multiple_volume_agv=1,
@@ -37,13 +40,14 @@ def my_strategy_logic(
 ):
     """
     KDJ + Volume Breakout Strategy.
-    Thresholds (kdj_low, kdj_high) are optimized instead of n/m.
+    若框架注入 k_df/d_df/j_df（预计算），则直接用，否则在内部算一次（n=9, m=3）。
     """
-    # 1. Calculate Indicators (Fixed n=9, m=3 as requested)
-    n, m = 9, 3
-    wk, wd, wj = inds.calc_weekly_kdj(open_df, high_df, low_df, close_df, N=n, M=m)
-    # k, d, j = inds.calc_kdj(close_df, high_df, low_df, N=n, M=m)
-    k, d, j = wk, wd, wj
+    # 1. 指标：预计算注入则用，否则算一次
+    if k_df is not None and d_df is not None and j_df is not None:
+        k, d, j = k_df, d_df, j_df
+    else:
+        n, m = 9, 3
+        k, d, j = inds.calc_weekly_kdj(open_df, high_df, low_df, close_df, N=n, M=m)
     vol_breakout = inds.check_volume_agv_breakout(vol_df, multiple=multiple_volume_agv)
 
     # 2. Entry Signal
@@ -70,7 +74,10 @@ if __name__ == "__main__":
     # Initialize Runner
     runner = BacktestRunner(DATA_DIR, REPORT_DIR)
 
-    # Load Data
+    # 预计算：默认周 KDJ；也可 set_precompute_indicators(["weekly_kdj", "atr"])
+    runner.set_precompute_indicators("default")
+
+    # Load Data（use_cache=True 时对齐结果缓存为 .parquet，二次启动直接读缓存）
     if not runner.load_data():
         exit(1)
 
@@ -93,8 +100,8 @@ if __name__ == "__main__":
         "kdj_low": [31],
         "kdj_high": [84],
         "multiple_volume_agv": [1.3],
-        "sl_stop": [0.30],
-        "sl_trail": [0.30],
+        "sl_stop": [0.20],
+        "sl_trail": [0.20],
     }
     # Run Full Cycle (Opt -> Valid -> Report -> Plot)
     print("Starting Backtest Cycle...")
@@ -102,9 +109,9 @@ if __name__ == "__main__":
         my_strategy_logic,
         param_grid,
         split_ratio=0.7,
-        # accumulate=False,  # 开启多次入场
-        # size=0.1,  # 每次入场仓位
-        # size_type="value",  # 按价值百分比
+        accumulate=True,  # 开启多次入场
+        size=0.1,  # 每次入场仓位
+        size_type="value",  # 按价值百分比
     )
     print("#" * 100)
     print("#" * 100)
