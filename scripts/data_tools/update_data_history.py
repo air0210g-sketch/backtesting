@@ -145,6 +145,86 @@ def merge_and_save_candles(filepath, new_candles):
     return count_new
 
 
+def save_candles(filepath, candles):
+    """全量写入 K 线到 CSV（用于 FULL 模式）。"""
+    headers = ["date", "open", "high", "low", "close", "volume", "turnover"]
+    with open(filepath, "w", newline="") as f:
+        writer = csv.writer(f)
+        writer.writerow(headers)
+        for c in candles:
+            writer.writerow([
+                c.timestamp.strftime("%Y-%m-%d"),
+                str(c.open),
+                str(c.high),
+                str(c.low),
+                str(c.close),
+                str(c.volume),
+                str(c.turnover),
+            ])
+
+
+def run_update(data_dir=None):
+    """
+    增量更新日线 CSV。可被外部直接调用。
+    data_dir: 数据目录路径，默认 None 表示使用脚本内 STOCK_DATA_DIR。
+    """
+    if data_dir:
+        effective_dir = os.path.abspath(data_dir)
+    else:
+        _root = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+        effective_dir = os.path.join(_root, STOCK_DATA_DIR)
+    if not os.path.isdir(effective_dir):
+        print(f"Directory {effective_dir} not found.")
+        return
+
+    try:
+        ctx = get_ctx()
+    except Exception as e:
+        print(f"无法初始化 LongPort 连接: {e}")
+        raise
+
+    files = [f for f in os.listdir(effective_dir) if f.endswith("_day.csv")]
+    symbols = [f.replace("_day.csv", "") for f in files]
+    print(f"Found {len(symbols)} symbols to check.")
+
+    for i, sym in enumerate(symbols):
+        filepath = os.path.join(effective_dir, f"{sym}_day.csv")
+        last_date = get_last_date(filepath)
+
+        start_fetch_date = START_DATE
+        mode = "FULL"
+
+        if last_date:
+            days_diff = (TODAY - last_date).days
+            if days_diff <= 180:
+                mode = "INCREMENTAL"
+                start_fetch_date = last_date + timedelta(days=1)
+            else:
+                mode = "FULL (Gap > 180 days)"
+        else:
+            mode = "FULL (New/Error)"
+
+        print(f"[{i+1}/{len(symbols)}] {sym}: {mode}. Last Date: {last_date}")
+
+        if start_fetch_date >= TODAY:
+            print(f"  Already up to date.")
+            continue
+
+        candles = fetch_history_for_symbol(ctx, sym, start_date=start_fetch_date)
+
+        if candles:
+            if mode.startswith("INCREMENTAL"):
+                added = merge_and_save_candles(filepath, candles)
+                print(f"  Appended {added} new records.")
+            else:
+                save_candles(filepath, candles)
+                print(f"  Overwritten with {len(candles)} records.")
+        else:
+            print(f"  No new data fetched.")
+
+    print("All done.")
+
+
 def main():
     if not os.path.exists(STOCK_DATA_DIR):
         print(f"Directory {STOCK_DATA_DIR} not found.")
