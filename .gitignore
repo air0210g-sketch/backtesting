@@ -4,4 +4,5 @@ __pycache__/
 .DS_Store
 *.html
 *.png
+*.csv
 stock_data/.cache/ohlcv.pkl
