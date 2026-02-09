@@ -7,5 +7,5 @@ __pycache__/
 *.csv
 .venv/
 watch_stock/report/
-stock_data/
+stock_data/.*
 stock_data/.cache/ohlcv.pkl
