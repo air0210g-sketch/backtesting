@@ -8,6 +8,7 @@ vectorbt>=0.26.0
 # 定时与通知（framework 定时任务、Telegram 通知）
 schedule>=1.2.0
 requests>=2.28.0
+python-telegram-bot>=21.0
 
 # 形态识别（watch_metric 周线/日线形态、run_talib_pattern）
 # 安装前需先装 C 库：macOS `brew install ta-lib`，Ubuntu 编译安装，Windows 见官方文档

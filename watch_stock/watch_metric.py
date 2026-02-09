@@ -20,6 +20,7 @@ if _REPO_ROOT not in sys.path:
     sys.path.insert(0, _REPO_ROOT)
 
 from backtesting.data_loader import load_data
+from backtesting.notifier import TelegramNotifier
 from backtesting.indicators import (
     calc_kdj,
     get_kdj_cross_signals,
@@ -267,7 +268,27 @@ def run():
         f.write(md_table)
         f.write("\n")
     print(f"报告已写入：{report_path}")
+
+    # 可选：发送 Telegram 通知（需设置环境变量 TELEGRAM_TOKEN、TELEGRAM_CHAT_ID）
+    _send_telegram_report(report_name, len(results), report_path)
+
     return out
+
+
+def _send_telegram_report(report_name: str, count: int, report_path: str) -> None:
+    """使用 backtesting.notifier.TelegramNotifier 将报告摘要发送到 Telegram。"""
+    token = os.environ.get("TELEGRAM_TOKEN")
+    chat_id = os.environ.get("TELEGRAM_CHAT_ID")
+    if not token or not chat_id:
+        return
+    notifier = TelegramNotifier(token=token, chat_id=chat_id)
+    text = (
+        f"<b>📊 选股报告已生成</b>\n\n"
+        f"日期: {report_name.replace('.md', '')}\n"
+        f"入选数量: {count} 只\n"
+        f"路径: <code>{report_path}</code>"
+    )
+    notifier.send_message(text)
 
 
 def _df_to_markdown_table(df: pd.DataFrame) -> str:
