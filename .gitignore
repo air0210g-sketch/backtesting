@@ -5,4 +5,5 @@ __pycache__/
 *.html
 *.png
 *.csv
+.venv/
 stock_data/.cache/ohlcv.pkl
