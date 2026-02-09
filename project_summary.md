@@ -42,6 +42,22 @@ FW ..> Engine : (Archived in legacy/)
 @enduml
 ```
 
+## 2.5 依赖与安装
+
+项目根目录提供 `requirements.txt`，安装 Python 依赖：
+
+```bash
+# 建议在虚拟环境中安装
+python3 -m venv .venv
+source .venv/bin/activate   # Windows: .venv\Scripts\activate
+
+pip install -r requirements.txt
+```
+
+- **TA-Lib**：需先安装 C 库再 pip 安装。macOS：`brew install ta-lib`；Linux 需编译 [ta-lib](https://ta-lib.org/) 源码。
+- **watch_metric**（`watch_stock/watch_metric.py`）最小依赖：`pandas`、`numpy`；形态展示需 `TA-Lib`。
+- 数据下载脚本（`scripts/data_tools`）需额外安装 `longport-openapi`（见 requirements.txt 注释）。
+
 ## 3. 核心模块
 
 ### 3.1 核心框架 (`backtesting/`)
