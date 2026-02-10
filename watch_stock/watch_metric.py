@@ -89,6 +89,65 @@ def load_stock_names(path: str) -> dict:
         return {}
 
 
+def _get_longport_credentials():
+    """从 mcp_config.json 或环境变量读取 LongPort 凭证，与 sync_watchlist_from_analysis 一致。"""
+    config_path = os.path.expanduser("~/.gemini/antigravity/mcp_config.json")
+    if not os.path.exists(config_path):
+        return None
+    try:
+        with open(config_path, "r", encoding="utf-8") as f:
+            data = json.load(f)
+    except Exception:
+        return None
+    env = {}
+    if "mcpServers" in data and "longport-mcp" in data.get("mcpServers", {}):
+        env = data["mcpServers"]["longport-mcp"].get("env", {})
+    elif "longport-mcp" in data:
+        env = data["longport-mcp"].get("env", data["longport-mcp"])
+    app_key = env.get("LONGPORT_APP_KEY") or os.environ.get("LONGPORT_APP_KEY")
+    app_secret = env.get("LONGPORT_APP_SECRET") or os.environ.get("LONGPORT_APP_SECRET")
+    access_token = env.get("LONGPORT_ACCESS_TOKEN") or os.environ.get("LONGPORT_ACCESS_TOKEN")
+    if not all([app_key, app_secret, access_token]):
+        return None
+    return app_key, app_secret, access_token
+
+
+def fetch_stock_names_longport(symbols: list) -> dict:
+    """
+    通过 LongPort OpenAPI static_info 获取代码->名称映射。
+    优先使用 name_cn（简体），否则 name_en。若未安装 longport 或请求失败则返回 {}。
+    """
+    if not symbols:
+        return {}
+    try:
+        from longport.openapi import QuoteContext, Config
+    except ImportError:
+        return {}
+    creds = _get_longport_credentials()
+    if not creds:
+        return {}
+    app_key, app_secret, access_token = creds
+    try:
+        cfg = Config(app_key, app_secret, access_token)
+        ctx = QuoteContext(cfg)
+        # 单次最多 500 只，按批请求
+        batch = 200
+        result = {}
+        for i in range(0, len(symbols), batch):
+            chunk = symbols[i : i + batch]
+            infos = ctx.static_info(chunk)
+            for item in infos:
+                sym = getattr(item, "symbol", "") or ""
+                name_cn = getattr(item, "name_cn", None) or ""
+                name_en = getattr(item, "name_en", None) or ""
+                name_hk = getattr(item, "name_hk", None) or ""
+                result[sym] = (name_cn or name_hk or name_en or "-").strip() or "-"
+        return result
+    except Exception as e:
+        print(f"[watch_metric] LongPort static_info 获取名称失败: {e}，将使用 stock_names.json 或「-」。")
+        return {}
+
+
 def get_talib_pattern_names_at_bar(open_series, high_series, low_series, close_series, bar_index=-1):
     """
     在指定 K 线位置检测 TA-Lib 形态，返回该 bar 触发的看多形态名称列表。
@@ -151,6 +210,17 @@ def run():
 
     print(f"共 {len(data_map)} 只股票参与筛选（最近约一年数据）。")
     name_map = load_stock_names(STOCK_NAMES_PATH)
+    # 优先用 LongPort static_info 拉取名称，覆盖/补全 name_map
+    symbols_list = list(data_map.keys())
+    names_from_lp = fetch_stock_names_longport(symbols_list)
+    if names_from_lp:
+        name_map.update(names_from_lp)
+        os.makedirs(os.path.dirname(STOCK_NAMES_PATH), exist_ok=True)
+        try:
+            with open(STOCK_NAMES_PATH, "w", encoding="utf-8") as f:
+                json.dump(name_map, f, ensure_ascii=False, indent=2)
+        except Exception:
+            pass
 
     # 4. 筛选：最近 3 日内有日线金叉 或 最近 3 周内有周线金叉 任一即可
     results = []
