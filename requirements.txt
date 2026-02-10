@@ -19,3 +19,6 @@ plotly>=5.0.0
 
 # ---------- 可选：仅下载/校验行情数据时需要 ----------
 # longport-openapi  # 数据下载脚本 scripts/data_tools 使用
+
+# ---------- 可选：定时执行完整 SKILL（Gemini SDK）时需要 ----------
+# google-genai  # scripts/run_full_skill_gemini.py，需 GEMINI_API_KEY

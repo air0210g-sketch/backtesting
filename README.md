@@ -42,11 +42,13 @@ pip install -r requirements.txt
 | 发报告 | `watch_stock/send_analysis_to_telegram.py [yyyy-mm-dd]` | 将 `yyyy-mm-dd_analysis.md` 以**文档**形式发到 Telegram |
 | 自选股 | `watch_stock/sync_watchlist_from_analysis.py [report_path]` | 将报告 §3 表格中的代码覆盖到 LongBridge「auto watch」分组 |
 
-**定时任务**（UTC+8 每个交易日 11:30、15:30、17:00 执行初筛）：
+**定时任务**（UTC+8 每个交易日 11:30、15:30、17:00 执行初筛；成功后自动将当日初筛报告 `yyyy-mm-dd.md` 以文档形式发到 Telegram）：
 
 ```bash
 .venv/bin/python scripts/run_daily_stock_analysis.py
 ```
+
+若要在定时任务中执行**完整 SKILL**：推荐 **完整版** **`scripts/run_full_skill_gemini.py`** — 使用 Gemini Function Calling（read_file / get_quote / get_candlesticks 等）+ LongPort 行情，按 SKILL §2–§8 生成报告并执行 §9.1、§9.2。无 LongPort 或仅试跑可用 **`scripts/run_full_skill_gemini_simple.py`**（一次生成，见 `docs/scheduled_skill.md`）。均需 `pip install google-genai` 与 `GEMINI_API_KEY`。
 
 ## 数据与脚本
 

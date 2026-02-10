@@ -33,7 +33,7 @@ def is_trading_day() -> bool:
 
 
 def run_stock_analysis_job():
-    """执行 SKILL 第一步：初筛并写报告。仅交易日执行。"""
+    """执行 SKILL 第一步：初筛并写报告；成功后可选发送初筛报告到 Telegram。仅交易日执行。"""
     if not is_trading_day():
         return
     now = datetime.now(TZ_UTC8).strftime("%Y-%m-%d %H:%M")
@@ -41,7 +41,14 @@ def run_stock_analysis_job():
     try:
         from watch_stock.watch_metric import run
         run()
-        # 可选：发送完成提醒（需 TELEGRAM_TOKEN / TELEGRAM_CHAT_ID）
+        # 将当日初筛报告 yyyy-mm-dd.md 以文档形式发到 Telegram（若存在且已配置 token/chat_id）
+        date_str = datetime.now(TZ_UTC8).strftime("%Y-%m-%d")
+        screening_path = os.path.join("watch_stock", "report", f"{date_str}.md")
+        if os.path.isfile(os.path.join(_REPO_ROOT, screening_path)):
+            from watch_stock.send_analysis_to_telegram import send_report
+            if send_report(screening_path):
+                print(f"已发送初筛报告到 Telegram: {screening_path}")
+        # 可选：再发一条文本提醒
         token = os.environ.get("TELEGRAM_TOKEN")
         chat_id = os.environ.get("TELEGRAM_CHAT_ID")
         if token and chat_id:
