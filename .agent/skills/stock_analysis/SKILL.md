@@ -139,15 +139,15 @@ description: 当用户要求进行港股每日选股、技术分析、持仓/衍
 
 ### 9.1 发送分析报告到 Telegram
 
-将当日分析报告内容以 HTML 消息形式发送到 Telegram（按二级标题每两章一条，超长自动拆分；解析失败时降级为纯文本）。
+将当日分析报告**直接以 md 文件（文档）形式**发送到 Telegram。
 
 ```bash
 # 需先设置环境变量 TELEGRAM_TOKEN、TELEGRAM_CHAT_ID
 .venv/bin/python watch_stock/send_analysis_to_telegram.py [yyyy-mm-dd]
 ```
 
-- 不传日期则发送当日 `report/yyyy-mm-dd_analysis.md`。
-- 若参数为文件路径（如 `watch_stock/report/2025-11-27.html`），则将该文件以**文档**形式发送。
+- 不传日期则发送当日 `report/yyyy-mm-dd_analysis.md` 作为文档。
+- 若参数为文件路径（如 `watch_stock/report/2026-02-10_analysis.md`），则将该文件以**文档**形式发送。
 
 ### 9.2 同步重点标的自选股分组 (LongBridge)
 
@@ -170,7 +170,7 @@ description: 当用户要求进行港股每日选股、技术分析、持仓/衍
 | 用途 | 路径 | 说明 |
 |------|------|------|
 | 初筛 | `watch_stock/watch_metric.py` | 生成 `report/yyyy-mm-dd.md` 候选名单 |
-| 报告推送 | `watch_stock/send_analysis_to_telegram.py` | 发送 `yyyy-mm-dd_analysis.md` 到 Telegram |
+| 报告推送 | `watch_stock/send_analysis_to_telegram.py` | 将 `yyyy-mm-dd_analysis.md` 以文档形式发送到 Telegram |
 | 自选股同步 | `watch_stock/sync_watchlist_from_analysis.py` | 用报告 §3 表格覆盖 LongBridge「auto watch」 |
 | 形态库 | `.agent/skills/stock_analysis/pattern_recognition.md` | 60+ 技术形态定义，§4 形态识别时引用 |
 
