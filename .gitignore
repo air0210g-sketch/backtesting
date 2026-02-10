@@ -6,7 +6,7 @@ __pycache__/
 *.png
 *.csv
 .venv/
-.env
+*.env
 watch_stock/report/
 stock_data/.*
 stock_data/.cache/ohlcv.pkl
