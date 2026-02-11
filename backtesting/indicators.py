@@ -102,6 +102,129 @@ def calc_weekly_kdj(open_daily, high_daily, low_daily, close_daily, N=9, M=3):
     return dk, dd, dj
 
 
+def calc_obv(close, volume):
+    """
+    On-Balance Volume (OBV).
+    OBV[i] = OBV[i-1] + sign(close[i] - close[i-1]) * volume[i]，sign(0)=0。
+    用于趋势确认与背离：价创新高但 OBV 未创新高视为量价背离（假突破/噪音）。
+    """
+    delta = close.diff()
+    sign = np.sign(delta)
+    sign = sign.fillna(0)
+    obv = (sign * volume).cumsum()
+    return obv
+
+
+def zigzag_pivots(high, low, close, depth_pct=0.05):
+    """
+    基于百分比的 ZigZag，得到波峰波谷序列（过滤短线噪音）。
+    depth_pct: 反转深度，如 0.05 表示 5%。
+    返回: list of (index, value, is_high)，按时间序，高低交替。
+    """
+    if hasattr(high, "values"):
+        high = high.values
+    if hasattr(low, "values"):
+        low = low.values
+    if hasattr(close, "values"):
+        close = close.values
+    high = np.asarray(high, dtype=np.float64)
+    low = np.asarray(low, dtype=np.float64)
+    n = len(high)
+    if n == 0:
+        return []
+    pivots = []
+    extreme = high[0]
+    extreme_idx = 0
+    direction = "down"  # 当前在找从高点到低点的回落，下一拐点为低点
+
+    for i in range(1, n):
+        if direction == "down":
+            if low[i] <= extreme * (1.0 - depth_pct):
+                pivots.append((extreme_idx, float(extreme), True))
+                extreme = low[i]
+                extreme_idx = i
+                direction = "up"
+            elif high[i] > extreme:
+                extreme = high[i]
+                extreme_idx = i
+        else:
+            if high[i] >= extreme * (1.0 + depth_pct):
+                pivots.append((extreme_idx, float(extreme), False))
+                extreme = high[i]
+                extreme_idx = i
+                direction = "down"
+            elif low[i] < extreme:
+                extreme = low[i]
+                extreme_idx = i
+
+    if extreme_idx is not None:
+        pivots.append((extreme_idx, float(extreme), direction == "up"))
+
+    return pivots
+
+
+def zigzag_pivots_mt4(high, low, close, depth=12, deviation=0.05, backstep=3):
+    """
+    MT4 风格 ZigZag 拐点序列。
+    参数（与 MT4 默认一致）:
+      depth: 两个拐点 bar 之间最少间隔根数，过滤过密拐点。
+      deviation: 确认反转的最小价格变化比例，如 0.05 表示 5%。
+      backstep: 同向极值更新时的最小间隔（如连续更高高点，仅当新高点 bar 距上一候选 bar ≥ backstep 才替换候选），用于合并邻近极值。
+    返回: list of (index, value, is_high)，按时间序，高低交替。
+    """
+    if hasattr(high, "values"):
+        high = high.values
+    if hasattr(low, "values"):
+        low = low.values
+    if hasattr(close, "values"):
+        close = close.values
+    high = np.asarray(high, dtype=np.float64)
+    low = np.asarray(low, dtype=np.float64)
+    n = len(high)
+    if n <= depth:
+        return []
+
+    pivots = []
+    last_bar = -depth - 1
+    last_val = low[0]
+    direction = "up"
+    cand_bar = 0
+    cand_val = high[0]
+
+    for i in range(1, n):
+        if direction == "up":
+            if high[i] > cand_val:
+                if cand_bar is None or (i - cand_bar) >= backstep:
+                    cand_bar = i
+                    cand_val = high[i]
+            if low[i] <= cand_val * (1.0 - deviation):
+                if len(pivots) == 0 or (cand_bar - last_bar) >= depth:
+                    pivots.append((cand_bar, float(cand_val), True))
+                    last_bar = cand_bar
+                    last_val = cand_val
+                direction = "down"
+                cand_bar = i
+                cand_val = low[i]
+        else:
+            if low[i] < cand_val:
+                if cand_bar is None or (i - cand_bar) >= backstep:
+                    cand_bar = i
+                    cand_val = low[i]
+            if high[i] >= cand_val * (1.0 + deviation):
+                if len(pivots) == 0 or (cand_bar - last_bar) >= depth:
+                    pivots.append((cand_bar, float(cand_val), False))
+                    last_bar = cand_bar
+                    last_val = cand_val
+                direction = "up"
+                cand_bar = i
+                cand_val = high[i]
+
+    if len(pivots) > 0 and (cand_bar - last_bar) >= depth:
+        # direction=='up' 表示正在追踪高点，故最后一拐点为高点
+        pivots.append((cand_bar, float(cand_val), direction == "up"))
+    return pivots
+
+
 def check_volume_agv_breakout(volume, multiple=1.0):
     """
     Check if current volume is > multiple * MovingAverage(volume, window).
